@@ -5,7 +5,7 @@ set -e
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 # Change this to your GitHooker repo's raw URL
-REPO_RAW_URL="https://github.com/pgwindy/GitHooker"
+REPO_RAW_URL="https://raw.githubusercontent.com/pgwindy/GitHooker/test_git_hooks"
 # ──────────────────────────────────────────────────────────────────────────────
 
 echo "🚀 Initializing Local Git Hooks..."
