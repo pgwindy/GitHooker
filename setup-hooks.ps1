@@ -1,5 +1,6 @@
 # setup-hooks.ps1 — One-liner git hooks setup for any project repo (Windows)
-# Usage: iwr -useb https://raw.githubusercontent.com/pgwindy/GitHooker/test_git_hooks/setup-hooks.ps1 | iex
+# Usage: iwr -useb https://github.com/pgwindy/GitHooker/test_git_hooks/setup-hooks.ps1 | iex
+# Prerequisites: Python/pip, Node.js, Go, Java must be pre-installed
 $ErrorActionPreference = "Stop"
 
 # --- Configuration -----------------------------------------------------------
@@ -8,14 +9,7 @@ $REPO_RAW_URL = "https://github.com/pgwindy/GitHooker/test_git_hooks"
 
 Write-Host "`n=== Initializing Local Git Hooks ===" -ForegroundColor Cyan
 
-# 1. Check admin privileges (required for choco)
-$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-if (-not $isAdmin) {
-    Write-Host "ERROR: Please run this script in an Administrator PowerShell." -ForegroundColor Red
-    exit 1
-}
-
-# 2. Verify we are inside a git repository
+# 1. Verify we are inside a git repository
 $gitCheck = git rev-parse --is-inside-work-tree 2>$null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: Not inside a git repository. Please cd into your project first." -ForegroundColor Red
@@ -24,68 +18,52 @@ if ($LASTEXITCODE -ne 0) {
 
 $PROJECT_ROOT = (git rev-parse --show-toplevel).Replace("/", "\")
 
-# 3. Check for Chocolatey
-if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
-    Write-Host "ERROR: Chocolatey is required but not installed." -ForegroundColor Red
-    Write-Host "Install it from https://chocolatey.org/install" -ForegroundColor Yellow
+# 2. Check prerequisites
+Write-Host "`n[1/6] Checking prerequisites..." -ForegroundColor Yellow
+$missing = @()
+if (-not (Get-Command python -ErrorAction SilentlyContinue)) { $missing += "python" }
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) { $missing += "node" }
+if (-not (Get-Command go -ErrorAction SilentlyContinue)) { $missing += "go" }
+if (-not (Get-Command java -ErrorAction SilentlyContinue)) { $missing += "java" }
+
+if ($missing.Count -gt 0) {
+    Write-Host "ERROR: Missing required tools: $($missing -join ', ')" -ForegroundColor Red
+    Write-Host "Please install them before running this script." -ForegroundColor Yellow
     exit 1
 }
+Write-Host "  - python, node, go, java: OK" -ForegroundColor Green
 
-# 4. Install tools via Chocolatey
-Write-Host "`n[1/7] Installing Node.js, Go, and Java via Chocolatey..." -ForegroundColor Yellow
-
-$chocoPackages = @("nodejs", "golang", "ojdkbuild17")
-foreach ($pkg in $chocoPackages) {
-    if ($pkg -eq "nodejs" -and (Get-Command node -ErrorAction SilentlyContinue)) {
-        Write-Host "  - $pkg already installed, skipping." -ForegroundColor Gray
-        continue
-    }
-    if ($pkg -eq "golang" -and (Get-Command go -ErrorAction SilentlyContinue)) {
-        Write-Host "  - $pkg already installed, skipping." -ForegroundColor Gray
-        continue
-    }
-    if ($pkg -eq "ojdkbuild17" -and (Get-Command java -ErrorAction SilentlyContinue)) {
-        Write-Host "  - java already installed, skipping." -ForegroundColor Gray
-        continue
-    }
-    Write-Host "  - Installing $pkg..."
-    choco install $pkg -y --no-progress | Out-Null
+# Ensure Go bin is in PATH
+$env:GOPATH = if ($env:GOPATH) { $env:GOPATH } else { "$env:USERPROFILE\go" }
+if ($env:Path -notlike "*$env:GOPATH\bin*") {
+    $env:Path = "$env:Path;$env:GOPATH\bin"
 }
 
-# 5. Refresh PATH so newly installed tools are available
-Write-Host "`n[2/7] Refreshing PATH..." -ForegroundColor Yellow
-$machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
-$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-$env:Path = "$machinePath;$userPath"
-# Also add Go bin path
-$env:GOPATH = if ($env:GOPATH) { $env:GOPATH } else { "$env:USERPROFILE\go" }
-$env:Path = "$env:Path;$env:GOPATH\bin"
-
-# 6. Install pre-commit via pip
-Write-Host "`n[3/7] Installing pre-commit via pip..." -ForegroundColor Yellow
+# 3. Install pre-commit via pip
+Write-Host "`n[2/6] Installing pre-commit via pip..." -ForegroundColor Yellow
 if (Get-Command pre-commit -ErrorAction SilentlyContinue) {
     Write-Host "  - pre-commit already installed, skipping." -ForegroundColor Gray
 } else {
     pip install pre-commit
 }
 
-# 7. Install gitleaks and tflint via go install
-Write-Host "`n[4/7] Installing gitleaks via go install..." -ForegroundColor Yellow
+# 4. Install gitleaks and tflint via go install
+Write-Host "`n[3/6] Installing gitleaks via go install..." -ForegroundColor Yellow
 if (Get-Command gitleaks -ErrorAction SilentlyContinue) {
     Write-Host "  - gitleaks already installed, skipping." -ForegroundColor Gray
 } else {
     go install github.com/zricethezav/gitleaks/v8@latest
 }
 
-Write-Host "`n[5/7] Installing tflint via go install..." -ForegroundColor Yellow
+Write-Host "`n[4/6] Installing tflint via go install..." -ForegroundColor Yellow
 if (Get-Command tflint -ErrorAction SilentlyContinue) {
     Write-Host "  - tflint already installed, skipping." -ForegroundColor Gray
 } else {
     go install github.com/terraform-linters/tflint@latest
 }
 
-# 8. Install checkstyle (standalone jar + wrapper)
-Write-Host "`n[6/7] Installing checkstyle..." -ForegroundColor Yellow
+# 5. Install checkstyle (standalone jar + wrapper)
+Write-Host "`n[5/6] Installing checkstyle..." -ForegroundColor Yellow
 $checkstyleDir = "$env:USERPROFILE\.checkstyle"
 $checkstyleJar = "$checkstyleDir\checkstyle.jar"
 $checkstyleVersion = "10.21.4"
@@ -119,12 +97,12 @@ if ($currentUserPath -notlike "*$wrapperDir*") {
     Write-Host "  - Added $wrapperDir to user PATH."
 }
 
-# 9. Download configuration files
-Write-Host "`n[7/7] Downloading hook configuration files..." -ForegroundColor Yellow
+# 6. Download configuration files
+Write-Host "`n[6/6] Downloading hook configuration files..." -ForegroundColor Yellow
 Invoke-WebRequest -Uri "$REPO_RAW_URL/.pre-commit-config-win.yaml" -OutFile "$PROJECT_ROOT\.pre-commit-config.yaml" -UseBasicParsing
 Invoke-WebRequest -Uri "$REPO_RAW_URL/.eslintrc.json" -OutFile "$PROJECT_ROOT\.eslintrc.json" -UseBasicParsing
 
-# 10. Register hooks with Git
+# 7. Register hooks with Git
 Write-Host "`nRegistering hooks with Git..." -ForegroundColor Yellow
 Push-Location $PROJECT_ROOT
 pre-commit install

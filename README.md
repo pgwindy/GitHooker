@@ -34,16 +34,27 @@ curl -fsSL https://github.com/pgwindy/GitHooker/test_git_hooks/setup-hooks.sh | 
 
 ### Windows
 
-**Prerequisites:** [Chocolatey](https://chocolatey.org/install), Python/pip
+**Prerequisites:** Python/pip, Node.js, Go, Java
 
-Open an **Administrator PowerShell** and run:
+If any are missing, install them via [Chocolatey](https://chocolatey.org/install) (requires admin):
+
+```powershell
+choco install python nodejs golang ojdkbuild17 -y
+```
+
+Then run the setup script (no admin required):
 
 ```powershell
 iwr -useb https://github.com/pgwindy/GitHooker/test_git_hooks/setup-hooks.ps1 | iex
 ```
 
+Or if downloaded locally:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup-hooks.ps1
+```
+
 **What it installs:**
-- Via Chocolatey: `nodejs`, `golang`, `java`
 - Via pip: `pre-commit`
 - Via go install: `gitleaks`, `tflint`
 - Via Maven Central: `checkstyle` (standalone jar)
