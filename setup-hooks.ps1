@@ -3,7 +3,7 @@
 $ErrorActionPreference = "Stop"
 
 # --- Configuration -----------------------------------------------------------
-$REPO_RAW_URL = "https://raw.githubusercontent.com/pgwindy/GitHooker/test_git_hooks"
+$REPO_RAW_URL = "https://github.com/pgwindy/GitHooker/test_git_hooks"
 # ------------------------------------------------------------------------------
 
 Write-Host "`n=== Initializing Local Git Hooks ===" -ForegroundColor Cyan
