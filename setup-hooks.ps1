@@ -66,8 +66,8 @@ if (Get-Command tflint -ErrorAction SilentlyContinue) {
 Write-Host "`n[5/6] Installing checkstyle..." -ForegroundColor Yellow
 $checkstyleDir = "$env:USERPROFILE\.checkstyle"
 $checkstyleJar = "$checkstyleDir\checkstyle.jar"
-$checkstyleVersion = "10.21.4"
-$checkstyleUrl = "https://repo1.maven.org/maven2/com/puppycrawl/tools/checkstyle/$checkstyleVersion/checkstyle-$checkstyleVersion-all.jar"
+$checkstyleVersion = "13.4.0"
+$checkstyleUrl = "https://github.com/checkstyle/checkstyle/releases/download/checkstyle-$checkstyleVersion/checkstyle-$checkstyleVersion-all.jar"
 
 if (-not (Test-Path $checkstyleDir)) {
     New-Item -ItemType Directory -Path $checkstyleDir -Force | Out-Null
